@@ -2,21 +2,25 @@ package com.jpmc.midascore;
 
 import com.jpmc.midascore.entity.TransactionRecord;
 import com.jpmc.midascore.entity.UserRecord;
+import com.jpmc.midascore.foundation.Incentive;
 import com.jpmc.midascore.foundation.Transaction;
 import com.jpmc.midascore.repository.TransactionRepository;
 import com.jpmc.midascore.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.web.client.RestTemplate;
 @Service
 public class TransactionService {
 
     private final UserRepository userRepository;
     private final TransactionRepository transactionRepository;
+    private final RestTemplate restTemplate;
+    private static final String INCENTIVE_API_URL = "http://localhost:8080/incentive";
 
-    public TransactionService(UserRepository userRepository, TransactionRepository transactionRepository) {
+    public TransactionService(UserRepository userRepository, TransactionRepository transactionRepository, RestTemplate restTemplate) {
         this.userRepository = userRepository;
         this.transactionRepository = transactionRepository;
+        this.restTemplate = restTemplate;
     }
 
     @Transactional
@@ -42,16 +46,29 @@ public class TransactionService {
             return;
         }
 
+        // Call incentive API
+        float incentiveAmount = 0.0f;
+        try {
+            Incentive incentive = restTemplate.postForObject(INCENTIVE_API_URL, transaction, Incentive.class);
+            if (incentive != null) {
+                incentiveAmount = incentive.getAmount();
+                System.out.println("Received incentive: " + incentiveAmount);
+            }
+        } catch (Exception e) {
+            System.out.println("Error calling incentive API: " + e.getMessage());
+            // Continue processing without incentive
+        }
+
         // Process the transaction
         sender.setBalance(sender.getBalance() - transaction.getAmount());
-        recipient.setBalance(recipient.getBalance() + transaction.getAmount());
+        recipient.setBalance(recipient.getBalance() + transaction.getAmount() + incentiveAmount);
 
         // Save updated user records
         userRepository.save(sender);
         userRepository.save(recipient);
 
         // Create and save transaction record
-        TransactionRecord transactionRecord = new TransactionRecord(sender, recipient, transaction.getAmount());
+        TransactionRecord transactionRecord = new TransactionRecord(sender, recipient, transaction.getAmount(), incentiveAmount);
         transactionRepository.save(transactionRecord);
 
         System.out.println("Transaction processed: " + transactionRecord);
