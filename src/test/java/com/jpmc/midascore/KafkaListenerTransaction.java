@@ -2,8 +2,9 @@ package com.jpmc.midascore;
 
 import com.jpmc.midascore.foundation.Transaction;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.stereotype.Component;
 
-
+@Component
 public class KafkaListenerTransaction {
 
     private final TransactionService transactionService;
@@ -18,4 +19,3 @@ public class KafkaListenerTransaction {
         transactionService.processTransaction(transaction);
     }
 }
-

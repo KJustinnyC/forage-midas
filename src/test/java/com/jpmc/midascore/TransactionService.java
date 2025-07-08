@@ -6,11 +6,16 @@ import com.jpmc.midascore.foundation.Incentive;
 import com.jpmc.midascore.foundation.Transaction;
 import com.jpmc.midascore.repository.TransactionRepository;
 import com.jpmc.midascore.repository.UserRepository;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import org.slf4j.Logger;
+
 @Service
 public class TransactionService {
+
+    static final Logger logger = LoggerFactory.getLogger(TaskFourTests.class);
 
     private final UserRepository userRepository;
     private final TransactionRepository transactionRepository;
@@ -52,7 +57,8 @@ public class TransactionService {
             Incentive incentive = restTemplate.postForObject(INCENTIVE_API_URL, transaction, Incentive.class);
             if (incentive != null) {
                 incentiveAmount = incentive.getAmount();
-                System.out.println("Received incentive: " + incentiveAmount);
+                System.out.println("Received incentive: " + incentiveAmount + " for transaction: " + transaction);
+                logger.info("Received incentive: " + incentiveAmount + " for transaction: " + transaction);
             }
         } catch (Exception e) {
             System.out.println("Error calling incentive API: " + e.getMessage());
@@ -60,8 +66,11 @@ public class TransactionService {
         }
 
         // Process the transaction
-        sender.setBalance(sender.getBalance() - transaction.getAmount());
-        recipient.setBalance(recipient.getBalance() + transaction.getAmount() + incentiveAmount);
+        float senderNewBalance = sender.getBalance() - transaction.getAmount();
+        float recipientNewBalance = recipient.getBalance() + transaction.getAmount() + incentiveAmount;
+
+        sender.setBalance(senderNewBalance);
+        recipient.setBalance(recipientNewBalance);
 
         // Save updated user records
         userRepository.save(sender);
@@ -72,5 +81,7 @@ public class TransactionService {
         transactionRepository.save(transactionRecord);
 
         System.out.println("Transaction processed: " + transactionRecord);
+        System.out.println("Sender " + sender.getName() + " new balance: " + senderNewBalance);
+        System.out.println("Recipient " + recipient.getName() + " new balance: " + recipientNewBalance);
     }
 }
