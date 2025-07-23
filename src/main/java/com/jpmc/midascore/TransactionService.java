@@ -15,8 +15,6 @@ import org.slf4j.Logger;
 @Service
 public class TransactionService {
 
-    static final Logger logger = LoggerFactory.getLogger(TaskFourTests.class);
-
     private final UserRepository userRepository;
     private final TransactionRepository transactionRepository;
     private final RestTemplate restTemplate;
@@ -58,7 +56,6 @@ public class TransactionService {
             if (incentive != null) {
                 incentiveAmount = incentive.getAmount();
                 System.out.println("Received incentive: " + incentiveAmount + " for transaction: " + transaction);
-                logger.info("Received incentive: " + incentiveAmount + " for transaction: " + transaction);
             }
         } catch (Exception e) {
             System.out.println("Error calling incentive API: " + e.getMessage());
